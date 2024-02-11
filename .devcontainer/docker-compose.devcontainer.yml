@@ -1,0 +1,56 @@
+version: "3"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: .devcontainer/pyDockerfile
+      args:
+        VARIANT: 3
+        # Optional Node.js version to install
+        NODE_VERSION: "lts/*"
+    volumes:
+      - .:/workspace:cached
+    command: /bin/sh -c "while sleep 1000; do :; done"
+  postgresdb:
+    image: postgres:latest
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=vscode@vscode.com
+      - PGADMIN_DEFAULT_PASSWORD=vscode
+    ports:
+      - "5050:5050"
+    depends_on:
+      - postgresdb
+  redis:
+    image: "redis:latest"
+    command:
+      ["redis-server", "--requirepass", "redispassword", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - HTTP_USER=vscode
+      - HTTP_PASSWORD=vscode
+    ports:
+      - 8081:8081
+    depends_on:
+      - redis
+
+volumes:
+  postgres-data:
+    external: true
+  redis-data:
+    external: true
